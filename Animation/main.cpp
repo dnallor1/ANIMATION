@@ -9,12 +9,10 @@ class AnimatedSprite : public sf::Sprite {
 public:
     AnimatedSprite(const int fps, const std::string& path) : fps_(fps)//make an initializer list for fps_
     {
-        //load the texture here
         sf::Texture texture;
         if (!texture_.loadFromFile(path)) {
             std::cerr << "Could not load texture" << path << std::endl;
         }
-        //set Texture
         setTexture(texture_);
         setTextureRect(sf::IntRect(50, 0, 50, 37));
     }
@@ -30,7 +28,6 @@ public:
         t_ += dt;
         move(0,0.5 * g * pow(t_,2));
     }
-
     void move_up(const sf::Time &elapsed) {
         bouncce();
         float dt = elapsed.asSeconds();
@@ -38,15 +35,12 @@ public:
         t_ += dt;
         move(0,0.5 * g * pow(t_,2));
     }
-
     void jump(const sf::Time &elapsed) {
         bouncce();
         float dt = elapsed.asSeconds();
         int g = -20;
-//        t_ += dt;
         move(0,0.5 * g * pow(dt,2));
     }
-
     void move_right(const sf::Time &elapsed){
         bouncce();
         float dt = elapsed.asSeconds();
@@ -58,12 +52,9 @@ public:
         if(fragments_index == running_frames.size()){
             fragments_index = 0;
         }
-
-        // based on dt and fps_ fins fragments_index here
         setTextureRect(running_frames[fragments_index]);
         move(x_speed_*dt, 0);
     }
-
     void move_leftt(const sf::Time &elapsed){
         bouncce();
         float dt = elapsed.asSeconds();
@@ -75,12 +66,9 @@ public:
         if(fragments_index == running_frames.size()){
             fragments_index = 0;
         }
-
-        // based on dt and fps_ fins fragments_index here
         setTextureRect(running_frames[fragments_index]);
         move(-x_speed_*dt, 0);
     }
-
     void setBounds(const float& l_bound, const float& r_bound,const float& u_bound,const float& d_bound){
         l_bound_  = l_bound  ;
         r_bound_  = r_bound  ;
@@ -88,7 +76,6 @@ public:
         d_bound_  = d_bound  ;
     }
     void add_animation_frame(const sf::IntRect& frame){
-        //add animation frames to vector
         running_frames.emplace_back(frame);
     }
 private:
@@ -102,7 +89,6 @@ private:
     float u_bound_ = 0;
     float d_bound_ = 0;
     float t_ = 0.0;
-//    float jumping_t_ = 0.0;
     unsigned int fragments_index = 0;
     std::vector<sf::IntRect> running_frames;
 
@@ -132,9 +118,7 @@ int main() {
     AnimatedSprite hero(10, "Character\\character.png");
     hero.setBounds(0, window.getSize().x, 0, window.getSize().y);
     hero.setSpeed(70,70,10);
-    //hero.add_animation_frame(sf::IntRect(0, 0, 50, 37)); // hero standing frame 1
-    //hero.add_animation_frame(sf::IntRect(50, 0, 50, 37)); // hero standing frame 2
-    //hero.add_animation_frame(sf::IntRect(100, 0, 50, 37)); // hero standing frame 3
+
     hero.add_animation_frame(sf::IntRect(150, 0, 50, 37)); // hero running frame 1
     hero.add_animation_frame(sf::IntRect(200, 0, 50, 37)); // hero running frame 1
     hero.add_animation_frame(sf::IntRect(250, 0, 50, 37)); // hero running frame 1
@@ -168,26 +152,24 @@ int main() {
         if(sf::Keyboard::isKeyPressed(sf::Keyboard::Right))  {
             hero.move_right(elapsed);
         }
-
         //        collision
         for(auto &wall : walls) {
             sf::FloatRect heroBounds = hero.getGlobalBounds();
             sf::FloatRect wallBounds = wall.getGlobalBounds();
-
             heroBounds.left += vel_.x;
             heroBounds.top += vel_.y;
 
             if(wallBounds.intersects(heroBounds)){
                 vel_.y = 0.f;
                 vel_.x = 0.f;
-                //Bottom Collision
+                //top Collision
                 if(heroBounds.top < wallBounds.top
                         && heroBounds.top  + heroBounds.height < wallBounds.top  + wallBounds.height
                         && heroBounds.left < wallBounds.left + wallBounds.width
                         && heroBounds.left + heroBounds.width > wallBounds.left){
                     hero.jump(elapsed);
                 }
-                //Top Collision
+                //bottom Collision
                 else if(heroBounds.top > wallBounds.top
                         && heroBounds.top  + heroBounds.height > wallBounds.top  + wallBounds.height
                         && heroBounds.left < wallBounds.left + wallBounds.width
@@ -218,9 +200,9 @@ int main() {
             return 1;
         }
         texture.setRepeated(true);
-        sf::Sprite sprite;
-        sprite.setTexture(texture);
-        sprite.setTextureRect(sf::IntRect(0, 0, 800, 600));
+        sf::Sprite grass;
+        grass.setTexture(texture);
+        grass.setTextureRect(sf::IntRect(0, 0, 800, 600));
 
         sf::Texture texture_wall;
         if(!texture_wall.loadFromFile("wall.png")) {
@@ -236,32 +218,31 @@ int main() {
         //wall_2;
         wall.setPosition(sf::Vector2f(250, 70));
         walls.push_back(wall);
-        //wall_4;
+        //wall_3;
         wall.setPosition(sf::Vector2f(450, 300));
         walls.push_back(wall);
-        //wall_5;
+        //wall_4;
         wall.setPosition(sf::Vector2f(700, 100));
         walls.push_back(wall);
-        //wall_6;
+        //wall_5;
         wall.setPosition(sf::Vector2f(250, 235));
         wall.setRotation(-90);
         walls.push_back(wall);
-        //wall_7;
+        //wall_6;
         wall.setPosition(sf::Vector2f(70, 520));
         wall.setRotation(-90);
         walls.push_back(wall);
-        //wall_8;
+        //wall_7;
         wall.setPosition(sf::Vector2f(450, 520));
         wall.setRotation(-90);
         walls.push_back(wall);
 
         // draw everything here...
-        window.draw(sprite);
+        window.draw(grass);
         window.draw(hero);
         for(auto &wall_ : walls) {
             window.draw(wall_);
         }
-        // end the current frame
         window.display();
     }
     return 0;
