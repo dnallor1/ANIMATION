@@ -23,14 +23,31 @@ public:
         y_speed_ = y_speed;
         ro_speed_ = ro_speed;
     }
-    void fall(const sf::Time &elapsed) {
+    void move_down(const sf::Time &elapsed) {
+        bouncce();
         float dt = elapsed.asSeconds();
-        int g = 20;
-        falling_t_ = falling_t_ + dt;
-        //        float d = 0.5 * g * pow(fallin_t_,2); //1/2gt^2
-        move(0,0.5 * g * pow(falling_t_,2));
+        int g = 10;
+        t_ += dt;
+        move(0,0.5 * g * pow(t_,2));
     }
-    void animate(const sf::Time &elapsed){
+
+    void move_up(const sf::Time &elapsed) {
+        bouncce();
+        float dt = elapsed.asSeconds();
+        int g = -10;
+        t_ += dt;
+        move(0,0.5 * g * pow(t_,2));
+    }
+
+    void jump(const sf::Time &elapsed) {
+        bouncce();
+        float dt = elapsed.asSeconds();
+        int g = -20;
+//        t_ += dt;
+        move(0,0.5 * g * pow(dt,2));
+    }
+
+    void move_right(const sf::Time &elapsed){
         bouncce();
         float dt = elapsed.asSeconds();
         t_ += dt;
@@ -44,8 +61,26 @@ public:
 
         // based on dt and fps_ fins fragments_index here
         setTextureRect(running_frames[fragments_index]);
-        move(x_speed_*dt,y_speed_*dt);
+        move(x_speed_*dt, 0);
     }
+
+    void move_leftt(const sf::Time &elapsed){
+        bouncce();
+        float dt = elapsed.asSeconds();
+        t_ += dt;
+        if(t_ > 1.0/fps_){
+            fragments_index++;
+            t_ = 0.0;
+        }
+        if(fragments_index == running_frames.size()){
+            fragments_index = 0;
+        }
+
+        // based on dt and fps_ fins fragments_index here
+        setTextureRect(running_frames[fragments_index]);
+        move(-x_speed_*dt, 0);
+    }
+
     void setBounds(const float& l_bound, const float& r_bound,const float& u_bound,const float& d_bound){
         l_bound_  = l_bound  ;
         r_bound_  = r_bound  ;
@@ -67,9 +102,10 @@ private:
     float u_bound_ = 0;
     float d_bound_ = 0;
     float t_ = 0.0;
-    float falling_t_ = 0.0;
+//    float jumping_t_ = 0.0;
     unsigned int fragments_index = 0;
     std::vector<sf::IntRect> running_frames;
+
     void bouncce(){
         sf::FloatRect rectangle_bounds = getGlobalBounds();
         if(rectangle_bounds.top <= u_bound_){
@@ -95,7 +131,7 @@ int main() {
     sf::Vector2i mos_Pos_;
     AnimatedSprite hero(10, "Character\\character.png");
     hero.setBounds(0, window.getSize().x, 0, window.getSize().y);
-    hero.setSpeed(30,30,10);
+    hero.setSpeed(70,70,10);
     //hero.add_animation_frame(sf::IntRect(0, 0, 50, 37)); // hero standing frame 1
     //hero.add_animation_frame(sf::IntRect(50, 0, 50, 37)); // hero standing frame 2
     //hero.add_animation_frame(sf::IntRect(100, 0, 50, 37)); // hero standing frame 3
@@ -107,7 +143,6 @@ int main() {
     hero.add_animation_frame(sf::IntRect(400, 0, 50, 37)); // hero running frame 1
 
     sf::Clock clock;
-//    sf::FloatRect new_Pos_;
     // run the program as long as the window is open
     while (window.isOpen()) {
         hero.setTextureRect(sf::IntRect(50, 0, 50, 37));
@@ -121,17 +156,24 @@ int main() {
             if (event.type == sf::Event::Closed)
                 window.close();
         }
-        if(sf::Keyboard::isKeyPressed(sf::Keyboard::Right))  {
-            hero.animate(elapsed);
+        if(sf::Keyboard::isKeyPressed(sf::Keyboard::Up))  {
+            hero.move_up(elapsed);
         }
         if(sf::Keyboard::isKeyPressed(sf::Keyboard::Down))  {
-            hero.fall(elapsed);
+            hero.move_down(elapsed);
         }
+        if(sf::Keyboard::isKeyPressed(sf::Keyboard::Left))  {
+            hero.move_leftt(elapsed);
+        }
+        if(sf::Keyboard::isKeyPressed(sf::Keyboard::Right))  {
+            hero.move_right(elapsed);
+        }
+
         //        collision
         for(auto &wall : walls) {
             sf::FloatRect heroBounds = hero.getGlobalBounds();
             sf::FloatRect wallBounds = wall.getGlobalBounds();
-//            new_Pos_ = heroBounds;
+
             heroBounds.left += vel_.x;
             heroBounds.top += vel_.y;
 
@@ -143,7 +185,7 @@ int main() {
                         && heroBounds.top  + heroBounds.height < wallBounds.top  + wallBounds.height
                         && heroBounds.left < wallBounds.left + wallBounds.width
                         && heroBounds.left + heroBounds.width > wallBounds.left){
-                    hero.setPosition(heroBounds.left, wallBounds.top - heroBounds.height);
+                    hero.jump(elapsed);
                 }
                 //Top Collision
                 else if(heroBounds.top > wallBounds.top
@@ -167,7 +209,6 @@ int main() {
                     hero.setPosition(wallBounds.left + wallBounds.width, heroBounds.top);
                 }
             }
-            hero.animate(elapsed);
         }
         window.clear(sf::Color::Black);
 
