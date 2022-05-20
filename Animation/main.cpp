@@ -21,53 +21,11 @@ public:
         y_speed_ = y_speed;
         ro_speed_ = ro_speed;
     }
-    void move_down(const sf::Time &elapsed) {
-        bouncce();
-        float dt = elapsed.asSeconds();
-        int g = 10;
-        t_ += dt;
-        move(0,0.5 * g * pow(t_,2));
-    }
-    void move_up(const sf::Time &elapsed) {
-        bouncce();
-        float dt = elapsed.asSeconds();
-        int g = -10;
-        t_ += dt;
-        move(0,0.5 * g * pow(t_,2));
-    }
     void jump(const sf::Time &elapsed) {
-        bouncce();
         float dt = elapsed.asSeconds();
         int g = -20;
+        bouncce();
         move(0,0.5 * g * pow(dt,2));
-    }
-    void move_right(const sf::Time &elapsed){
-        bouncce();
-        float dt = elapsed.asSeconds();
-        t_ += dt;
-        if(t_ > 1.0/fps_){
-            fragments_index++;
-            t_ = 0.0;
-        }
-        if(fragments_index == running_frames.size()){
-            fragments_index = 0;
-        }
-        setTextureRect(running_frames[fragments_index]);
-        move(x_speed_*dt, 0);
-    }
-    void move_leftt(const sf::Time &elapsed){
-        bouncce();
-        float dt = elapsed.asSeconds();
-        t_ += dt;
-        if(t_ > 1.0/fps_){
-            fragments_index++;
-            t_ = 0.0;
-        }
-        if(fragments_index == running_frames.size()){
-            fragments_index = 0;
-        }
-        setTextureRect(running_frames[fragments_index]);
-        move(-x_speed_*dt, 0);
     }
     void setBounds(const float& l_bound, const float& r_bound,const float& u_bound,const float& d_bound){
         l_bound_  = l_bound  ;
@@ -77,6 +35,51 @@ public:
     }
     void add_animation_frame(const sf::IntRect& frame){
         running_frames.emplace_back(frame);
+    }
+    void moveInDirection(const sf::Time &elapsed, const sf::Keyboard::Key &key)  {
+        float dt = elapsed.asSeconds();
+        if(key == sf::Keyboard::Up) {
+            int g = -10;
+            t_ += dt;
+            y_speed_ = -1*std::abs(0.5 * g * pow(t_,2));
+            bouncce();
+            move(0,y_speed_);
+        }
+        else if(key == sf::Keyboard::Down)  {
+            int g = 10;
+            t_ += dt;
+            y_speed_ = std::abs(0.5 * g * pow(t_,2));
+            bouncce();
+            move(0, y_speed_);
+        }
+        else if(key == sf::Keyboard::Left)  {
+            t_ += dt;
+            if(t_ > 1.0/fps_){
+                fragments_index++;
+                t_ = 0.0;
+            }
+            if(fragments_index == running_frames.size()){
+                fragments_index = 0;
+            }
+            setTextureRect(running_frames[fragments_index]);
+            x_speed_ = -1*abs(x_speed_);
+            bouncce();
+            move(x_speed_ * dt, 0);
+        }
+        else if(key == sf::Keyboard::Right)  {
+            t_ += dt;
+            if(t_ > 1.0/fps_){
+                fragments_index++;
+                t_ = 0.0;
+            }
+            if(fragments_index == running_frames.size()){
+                fragments_index = 0;
+            }
+            setTextureRect(running_frames[fragments_index]);
+            x_speed_ = abs(x_speed_);
+            bouncce();
+            move(x_speed_ * dt, 0);
+        }
     }
 private:
     sf::Texture texture_;
@@ -117,7 +120,7 @@ int main() {
     sf::Vector2i mos_Pos_;
     AnimatedSprite hero(10, "Character\\character.png");
     hero.setBounds(0, window.getSize().x, 0, window.getSize().y);
-    hero.setSpeed(70,70,10);
+    hero.setSpeed(100,100,10);
 
     hero.add_animation_frame(sf::IntRect(150, 0, 50, 37)); // hero running frame 1
     hero.add_animation_frame(sf::IntRect(200, 0, 50, 37)); // hero running frame 1
@@ -140,55 +143,60 @@ int main() {
             if (event.type == sf::Event::Closed)
                 window.close();
         }
-        if(sf::Keyboard::isKeyPressed(sf::Keyboard::Up))  {
-            hero.move_up(elapsed);
-        }
-        if(sf::Keyboard::isKeyPressed(sf::Keyboard::Down))  {
-            hero.move_down(elapsed);
-        }
-        if(sf::Keyboard::isKeyPressed(sf::Keyboard::Left))  {
-            hero.move_leftt(elapsed);
-        }
-        if(sf::Keyboard::isKeyPressed(sf::Keyboard::Right))  {
-            hero.move_right(elapsed);
-        }
-        //        collision
-        for(auto &wall : walls) {
-            sf::FloatRect heroBounds = hero.getGlobalBounds();
-            sf::FloatRect wallBounds = wall.getGlobalBounds();
-            heroBounds.left += vel_.x;
-            heroBounds.top += vel_.y;
+        sf::Keyboard::Key pressed;
+        if(event.type == sf::Event::KeyPressed){
+            pressed = event.key.code;
+            if(sf::Keyboard::isKeyPressed(sf::Keyboard::Up))  {
+                hero.moveInDirection(elapsed,pressed);
+            }
+            if(sf::Keyboard::isKeyPressed(sf::Keyboard::Down))  {
+                hero.moveInDirection(elapsed,pressed);
+            }
+            if(sf::Keyboard::isKeyPressed(sf::Keyboard::Left))  {
+                hero.moveInDirection(elapsed,pressed);
+            }
+            if(sf::Keyboard::isKeyPressed(sf::Keyboard::Right))  {
+                hero.moveInDirection(elapsed,pressed);
+            }
+            //        collision
+            for(auto &wall : walls) {
+                sf::FloatRect heroBounds = hero.getGlobalBounds();
+                sf::FloatRect wallBounds = wall.getGlobalBounds();
+                heroBounds.left += vel_.x;
+                heroBounds.top += vel_.y;
 
-            if(wallBounds.intersects(heroBounds)){
-                vel_.y = 0.f;
-                vel_.x = 0.f;
-                //top Collision
-                if(heroBounds.top < wallBounds.top
-                        && heroBounds.top  + heroBounds.height < wallBounds.top  + wallBounds.height
-                        && heroBounds.left < wallBounds.left + wallBounds.width
-                        && heroBounds.left + heroBounds.width > wallBounds.left){
-                    hero.jump(elapsed);
-                }
-                //bottom Collision
-                else if(heroBounds.top > wallBounds.top
-                        && heroBounds.top  + heroBounds.height > wallBounds.top  + wallBounds.height
-                        && heroBounds.left < wallBounds.left + wallBounds.width
-                        && heroBounds.left + heroBounds.width > wallBounds.left){
-                    hero.setPosition(heroBounds.left, wallBounds.top + wallBounds.height);
-                }
-                //Right Collision
-                if(heroBounds.left < wallBounds.left
-                        && heroBounds.left + heroBounds.width < wallBounds.left + wallBounds.width
-                        && heroBounds.top < wallBounds.top + wallBounds.height
-                        && heroBounds.top + heroBounds.height > wallBounds.top){
-                    hero.setPosition(wallBounds.left - heroBounds.width, heroBounds.top);
-                }
-                //Left Collision
-                else if(heroBounds.left > wallBounds.left
-                        && heroBounds.left + heroBounds.width > wallBounds.left + wallBounds.width
-                        && heroBounds.top < wallBounds.top + wallBounds.height
-                        && heroBounds.top + heroBounds.height > wallBounds.top){
-                    hero.setPosition(wallBounds.left + wallBounds.width, heroBounds.top);
+                if(wallBounds.intersects(heroBounds)){
+                    vel_.y = 0.f;
+                    vel_.x = 0.f;
+                    //top Collision
+                    if(heroBounds.top < wallBounds.top
+                            && heroBounds.top  + heroBounds.height < wallBounds.top  + wallBounds.height
+                            && heroBounds.left < wallBounds.left + wallBounds.width
+                            && heroBounds.left + heroBounds.width > wallBounds.left){
+                        hero.setPosition(heroBounds.left, wallBounds.top - heroBounds.height);
+                        hero.jump(elapsed);
+                    }
+                    //bottom Collision
+                    else if(heroBounds.top > wallBounds.top
+                            && heroBounds.top  + heroBounds.height > wallBounds.top  + wallBounds.height
+                            && heroBounds.left < wallBounds.left + wallBounds.width
+                            && heroBounds.left + heroBounds.width > wallBounds.left){
+                        hero.setPosition(heroBounds.left, wallBounds.top + wallBounds.height);
+                    }
+                    //Right Collision
+                    if(heroBounds.left < wallBounds.left
+                            && heroBounds.left + heroBounds.width < wallBounds.left + wallBounds.width
+                            && heroBounds.top < wallBounds.top + wallBounds.height
+                            && heroBounds.top + heroBounds.height > wallBounds.top){
+                        hero.setPosition(wallBounds.left - heroBounds.width, heroBounds.top);
+                    }
+                    //Left Collision
+                    else if(heroBounds.left > wallBounds.left
+                            && heroBounds.left + heroBounds.width > wallBounds.left + wallBounds.width
+                            && heroBounds.top < wallBounds.top + wallBounds.height
+                            && heroBounds.top + heroBounds.height > wallBounds.top){
+                        hero.setPosition(wallBounds.left + wallBounds.width, heroBounds.top);
+                    }
                 }
             }
         }
